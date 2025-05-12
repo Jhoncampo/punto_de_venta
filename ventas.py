@@ -1,7 +1,7 @@
 from tkinter import Frame, LabelFrame, Label, NSEW, NS, Scrollbar, W
 from tkinter import messagebox
 from tkinter import ttk
-import ttkbootstrap as tb # type: ignore
+import ttkbootstrap as tb
 import sqlite3
 
 class Ventana(tb.Window):
@@ -22,11 +22,11 @@ class Ventana(tb.Window):
         lbltitulo=ttk.Label(self.lblframe_login, text='Inicio de sesión', font=('Arial',22))
         lbltitulo.pack(padx=10, pady=35)
 
-        txt_usuario=ttk.Entry(self.lblframe_login, width=40,justify='center')
-        txt_usuario.pack(padx=10,pady=10)
-        txt_clave=ttk.Entry(self.lblframe_login, width=40, justify='center')
-        txt_clave.pack(padx=10,pady=10)
-        txt_clave.configure(show='*')
+        self.txt_usuario=ttk.Entry(self.lblframe_login, width=40,justify='center')
+        self.txt_usuario.pack(padx=10,pady=10)
+        self.txt_clave=ttk.Entry(self.lblframe_login, width=40, justify='center')
+        self.txt_clave.pack(padx=10,pady=10)
+        self.txt_clave.configure(show='*')
         btn_acceso=ttk.Button(self.lblframe_login, text='Log in', width=38, command=self.logueo)
         btn_acceso.pack(padx=10,pady=10)
 
@@ -64,8 +64,40 @@ class Ventana(tb.Window):
         lbl3.grid(row=0,column=0,padx=10,pady=10)
     
     def logueo(self):
-        self.frame_login.pack_forget()
-        self.ventana_menu()
+
+        try:
+            #Establecemos la conexion a la base de datos
+            mi_conexion=sqlite3.connect("ventas.db")
+            #Creamos un cursor para realizar operaciones en la base de datos
+            mi_cursor=mi_conexion.cursor()
+            
+            nombre_usuario=self.txt_usuario.get()
+            clave_usuario=self.txt_clave.get()
+
+            mi_cursor.execute("SELECT * FROM usuarios WHERE nombre=? AND clave=?", (nombre_usuario, clave_usuario))
+           
+            datos_logueo=mi_cursor.fetchall()
+            if datos_logueo != "":
+                for row in datos_logueo:
+                    cod_usu=row[0]
+                    nom_usu=row[1]
+                    cla_usu=row[2]
+                    rol_usu=row[3]
+                
+                if nom_usu.strip() == self.txt_usuario.get().strip() and str(cla_usu) ==self.txt_clave.get():
+                    self.frame_login.pack_forget()
+                    self.ventana_menu()
+                else:
+                    messagebox.showerror("Acceso", "El usuario o la clave son incorrectos")
+            # Aplicamos cambios y cerramos la conexion
+            mi_conexion.commit()
+            mi_conexion.close()
+        except Exception as e:
+            print("Error:", e)  # Muestra el error en consola
+            messagebox.showerror("Acceso", f"Error en el login: {e}")
+
+
+        
 
     def  ventana_lista_usuarios(self):
         self.frame_lista_usuarios=Frame(self.frame_center)
