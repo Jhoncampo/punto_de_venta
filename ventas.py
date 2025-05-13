@@ -1,7 +1,6 @@
-from tkinter import Frame, LabelFrame, Label, NSEW, NS, Scrollbar, W
-from tkinter import messagebox
+from tkinter import Frame, LabelFrame, Label, NSEW, NS, messagebox, Toplevel, W, Entry
 from tkinter import ttk
-import ttkbootstrap as tb
+import ttkbootstrap as tb  # type: ignore
 import sqlite3
 
 class Ventana(tb.Window):
@@ -77,7 +76,7 @@ class Ventana(tb.Window):
             mi_cursor.execute("SELECT * FROM usuarios WHERE nombre=? AND clave=?", (nombre_usuario, clave_usuario))
            
             datos_logueo=mi_cursor.fetchall()
-            if datos_logueo != "":
+            if datos_logueo:
                 for row in datos_logueo:
                     cod_usu=row[0]
                     nom_usu=row[1]
@@ -96,9 +95,6 @@ class Ventana(tb.Window):
             print("Error:", e)  # Muestra el error en consola
             messagebox.showerror("Acceso", f"Error en el login: {e}")
 
-
-        
-
     def  ventana_lista_usuarios(self):
         self.frame_lista_usuarios=Frame(self.frame_center)
         self.frame_lista_usuarios.grid(row=0,column=0, columnspan=2,sticky=NSEW)
@@ -106,11 +102,11 @@ class Ventana(tb.Window):
         self.lblframe_botones_listusu=LabelFrame(self.frame_lista_usuarios)
         self.lblframe_botones_listusu.grid(row=0,column=0, padx=10, pady=10,sticky=NSEW)
 
-        btn_nuevo_usuario=tb.Button(self.lblframe_botones_listusu, text='Nuevo usuario', width=15, bootstyle='success')
+        btn_nuevo_usuario=tb.Button(self.lblframe_botones_listusu, text='Nuevo usuario', width=15, command=self.ventana_nuevo_usuario, style='success')
         btn_nuevo_usuario.grid(row=0,column=0,padx=5,pady=5)
-        btn_modificar_usuario=tb.Button(self.lblframe_botones_listusu, text='Modificar usuario', width=15,bootstyle='warning')
+        btn_modificar_usuario=tb.Button(self.lblframe_botones_listusu, text='Modificar usuario', width=15,style='warning')
         btn_modificar_usuario.grid(row=0,column=1,padx=5,pady=5)
-        btn_eliminar_usuario=tb.Button(self.lblframe_botones_listusu, text='Eliminar usuario', width=15, bootstyle='danger')
+        btn_eliminar_usuario=tb.Button(self.lblframe_botones_listusu, text='Eliminar usuario', width=15, style='danger')
         btn_eliminar_usuario.grid(row=0,column=2,padx=5,pady=5)
 
         self.lblframe_busqueda_listusu=LabelFrame(self.frame_lista_usuarios)
@@ -124,7 +120,7 @@ class Ventana(tb.Window):
         self.lblframe_tree_listusu.grid(row=2,column=0, padx=10, pady=10,sticky=NSEW)
         
         columnas=("codigo","nombre", "clave", "rol")
-        self.tree_lista_usuarios=tb.Treeview(self.lblframe_tree_listusu, columns=columnas, height=17, show='headings', bootstyle='dark')
+        self.tree_lista_usuarios=tb.Treeview(self.lblframe_tree_listusu, columns=columnas, height=17, show='headings', style='dark')
         self.tree_lista_usuarios.grid(row=0,column=0)
 
         self.tree_lista_usuarios.heading("codigo", text="Codigo", anchor=W)
@@ -133,43 +129,140 @@ class Ventana(tb.Window):
         self.tree_lista_usuarios.heading("rol", text="Rol", anchor=W)
         self.tree_lista_usuarios['displaycolumns']=("codigo","nombre", "rol")
 
-        tree_scroll_listausu=tb.Scrollbar(self.frame_lista_usuarios, bootstyle='round-success')
+        tree_scroll_listausu=tb.Scrollbar(self.frame_lista_usuarios, style='round-success')
         tree_scroll_listausu.grid(row=2,column=1)
         tree_scroll_listausu.config(command=self.tree_lista_usuarios.yview)
 
-        #llamamos a la funcion que muestra los usuarios
+        # we call the function to show the users
         self.mostrar_usuarios()
 
     def mostrar_usuarios(self):
         
         try:
-            #Establecemos la conexion a la base de datos
+            # we establish the connection to the database
             mi_conexion=sqlite3.connect("ventas.db")
-            #Creamos un cursor para realizar operaciones en la base de datos
+            # We create a cursor to perform operations on the database
             mi_cursor=mi_conexion.cursor()
-            #Eliminamos los registros que ya existen en el treeview
+            # We delete the records from the treeview
             registros=self.tree_lista_usuarios.get_children()
 
-            #Recorremos los registros y los eliminamos
+            #we iterate over the records and delete them
             for elementos in registros:
                 self.tree_lista_usuarios.delete(elementos)
                 
-            #Realizamos la consulta a la base de datos
+            # We perform the database query
             mi_cursor.execute("SELECT * FROM usuarios")
-            #Guardamos los resultados en una variable
+            # Save the data in a  variable
             datos=mi_cursor.fetchall()
 
             for row in datos:
                 self.tree_lista_usuarios.insert("",0,text=row[0], values=(row[0],row[1],row[2],row[3]))
 
-            # Aplicamos cambios y cerramos la conexion
+            # apply changes and close the connection
             mi_conexion.commit()
             mi_conexion.close()
         except:
             
-            messagebox.showerror("Lista de usuario", "No se pudo conectar a la base de datos")
+            messagebox.showerror("User list", "error to show the user list")
 
+    def ventana_nuevo_usuario(self):
 
+        self.frame_nuevo_usuario=Toplevel(self) # window above the user list
+        self.frame_nuevo_usuario.title("Nuevo usuario") #Title of the window
+        self.centrar_ventana_nuevo_usuario(400,400) # size of the window
+        self.frame_nuevo_usuario.resizable(0,0) # we do not want to resize the window
+        self.frame_nuevo_usuario.grab_set() # so that it does not allow any other accion until the window is closed
+
+        lblframe_nuevo_usuario=LabelFrame(self.frame_nuevo_usuario)
+        lblframe_nuevo_usuario.grid(row=0,column=0,padx=10,pady=10,sticky=NSEW)
+
+        lbl_codigo_nuevo_usuario=Label(lblframe_nuevo_usuario, text="Codigo")
+        lbl_codigo_nuevo_usuario.grid(row=0,column=0,padx=10,pady=10)
+        self.txt_codigo_nuevo_usuario=ttk.Entry(lblframe_nuevo_usuario, width=40)
+        self.txt_codigo_nuevo_usuario.grid(row=0,column=1,padx=10,pady=10)
+        
+        lbl_nombre_nuevo_usuario=Label(lblframe_nuevo_usuario, text="Nombre")
+        lbl_nombre_nuevo_usuario.grid(row=1,column=0,padx=10,pady=10)
+        self.txt_nombre_nuevo_usuario=ttk.Entry(lblframe_nuevo_usuario, width=40)
+        self.txt_nombre_nuevo_usuario.grid(row=1,column=1,padx=10,pady=10)
+
+        lbl_clave_nuevo_usuario=Label(lblframe_nuevo_usuario, text="Clave")
+        lbl_clave_nuevo_usuario.grid(row=2,column=0,padx=10,pady=10)
+        self.txt_clave_nuevo_usuario=ttk.Entry(lblframe_nuevo_usuario, width=40)
+        self.txt_clave_nuevo_usuario.grid(row=2,column=1,padx=10,pady=10)
+
+        lbl_rol_nuevo_usuario=Label(lblframe_nuevo_usuario, text="Rol")
+        lbl_rol_nuevo_usuario.grid(row=3,column=0,padx=10,pady=10)
+        self.txt_rol_nuevo_usuario=ttk.Combobox(lblframe_nuevo_usuario, width=38, values=("Administrador", "Vendedor", "Bodega"), state="readonly")
+        self.txt_rol_nuevo_usuario.grid(row=3,column=1,padx=10,pady=10)
+        self.txt_rol_nuevo_usuario.current(0) # set the default value to "Administrador"
+
+        btn_guardar_nuevo_usuario=ttk.Button(lblframe_nuevo_usuario, text="Guardar", width=38,style='success', command=self.guardar_usuario)
+        btn_guardar_nuevo_usuario.grid(row=4,column=1,padx=10,pady=10)
+
+        self.ultimo_usuario()
+
+    def guardar_usuario(self):
+        if self.txt_codigo_nuevo_usuario.get()=="" or self.txt_nombre_nuevo_usuario.get()=="" or self.txt_clave_nuevo_usuario.get()=="" or self.txt_rol_nuevo_usuario.get()=="":
+            messagebox.showwarning("Guardando usuarios", "Rellene todos los campos")
+            return
+        try:
+            mi_conexion=sqlite3.connect("ventas.db")
+            mi_cursor=mi_conexion.cursor()
+
+            datos_guardar_usuario=self.txt_codigo_nuevo_usuario.get(), self.txt_nombre_nuevo_usuario.get(), self.txt_clave_nuevo_usuario.get(), self.txt_rol_nuevo_usuario.get()
+            mi_cursor.execute("INSERT INTO usuarios VALUES(?,?,?,?)", datos_guardar_usuario)
+            messagebox.showinfo("Guardando usuarios", "Usuario guardado correctamente")
+
+            mi_conexion.commit()
+            self.frame_nuevo_usuario.destroy() # close the window
+            self.mostrar_usuarios() # refresh the user list
+            mi_conexion.close()
+        except:
+            messagebox.showerror("Guardando usuarios", "Error al guardar el usuario")
+
+    def ultimo_usuario(self):
+        try:
+            mi_conexion=sqlite3.connect("ventas.db")
+            mi_cursor=mi_conexion.cursor()
+
+            mi_cursor.execute("SELECT MAX(codigo) FROM usuarios")
+            datos=mi_cursor.fetchone()
+
+            for codusu in datos:
+                if codusu==None:
+                    self.ultusu=(int(1))
+                    self.txt_codigo_nuevo_usuario.config(state="normal")
+                    self.txt_codigo_nuevo_usuario.insert(0,str(self.ultusu))
+                    self.txt_codigo_nuevo_usuario.config(state="readonly")
+                    break
+                if codusu=="":
+                    self.ultusu=(int(1))
+                    self.txt_codigo_nuevo_usuario.config(state="normal")
+                    self.txt_codigo_nuevo_usuario.insert(0,str(self.ultusu))
+                    self.txt_codigo_nuevo_usuario.config(state="readonly")
+                    break
+                else:
+                    self.ultusu=(int(codusu)+1)
+                    self.txt_codigo_nuevo_usuario.config(state="normal")
+                    self.txt_codigo_nuevo_usuario.insert(0,str(self.ultusu))
+                    self.txt_codigo_nuevo_usuario.config(state="readonly")
+                    break
+
+            mi_conexion.commit()
+            mi_conexion.close()       
+        except:
+            messagebox.showerror("Guardando usuarios", "Error al guardar el usuario")           
+
+    def centrar_ventana_nuevo_usuario(self,ancho,alto):
+        ventana_ancho=ancho
+        ventana_alto=alto
+        pantalla_ancho=self.winfo_screenwidth()
+        pantalla_alto=self.winfo_screenheight()
+        coordenadas_x=int((pantalla_ancho/2)-(ventana_ancho/2))
+        coordenadas_y=int((pantalla_alto/2)-(ventana_alto/2))
+        self.frame_nuevo_usuario.geometry("{}x{}+{}+{}".format(ventana_ancho, ventana_alto, coordenadas_x, coordenadas_y))
+        
 def main():
     app=Ventana()
     app.title("Sistema de ventas")
