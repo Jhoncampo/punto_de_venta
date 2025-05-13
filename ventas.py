@@ -104,7 +104,7 @@ class Ventana(tb.Window):
 
         btn_nuevo_usuario=tb.Button(self.lblframe_botones_listusu, text='Nuevo usuario', width=15, command=self.ventana_nuevo_usuario, style='success')
         btn_nuevo_usuario.grid(row=0,column=0,padx=5,pady=5)
-        btn_modificar_usuario=tb.Button(self.lblframe_botones_listusu, text='Modificar usuario', width=15,style='warning')
+        btn_modificar_usuario=tb.Button(self.lblframe_botones_listusu, text='Modificar usuario', width=15,style='warning', command=self.ventana_modificar_usuario)
         btn_modificar_usuario.grid(row=0,column=1,padx=5,pady=5)
         btn_eliminar_usuario=tb.Button(self.lblframe_botones_listusu, text='Eliminar usuario', width=15, style='danger')
         btn_eliminar_usuario.grid(row=0,column=2,padx=5,pady=5)
@@ -112,8 +112,9 @@ class Ventana(tb.Window):
         self.lblframe_busqueda_listusu=LabelFrame(self.frame_lista_usuarios)
         self.lblframe_busqueda_listusu.grid(row=1,column=0, padx=10, pady=10,sticky=NSEW)
 
-        txt_busqueda_usuario=ttk.Entry(self.lblframe_busqueda_listusu, width=96)
-        txt_busqueda_usuario.grid(row=0,column=0,padx=5,pady=5)
+        self.txt_busqueda_usuario=ttk.Entry(self.lblframe_busqueda_listusu, width=96)
+        self.txt_busqueda_usuario.grid(row=0,column=0,padx=5,pady=5)
+        self.txt_busqueda_usuario.bind('<Key>', self.buscar_usuarios)
 
 
         self.lblframe_tree_listusu=LabelFrame(self.frame_lista_usuarios)
@@ -263,6 +264,110 @@ class Ventana(tb.Window):
         coordenadas_y=int((pantalla_alto/2)-(ventana_alto/2))
         self.frame_nuevo_usuario.geometry("{}x{}+{}+{}".format(ventana_ancho, ventana_alto, coordenadas_x, coordenadas_y))
         
+    def buscar_usuarios(self, event):
+        try:
+            mi_conexion=sqlite3.connect("ventas.db")
+            mi_cursor=mi_conexion.cursor()
+
+            registros=self.tree_lista_usuarios.get_children()
+            for elementos in registros:
+                self.tree_lista_usuarios.delete(elementos)
+            
+            mi_cursor.execute("SELECT * FROM usuarios WHERE nombre LIKE ?", (self.txt_busqueda_usuario.get()+'%',))
+
+            datos=mi_cursor.fetchall()
+
+            for row in datos:
+                self.tree_lista_usuarios.insert("",0,text=row[0], values=(row[0],row[1],row[2],row[3]))
+
+            mi_conexion.commit()
+            mi_conexion.close()
+        except:
+            messagebox.showerror("Buscando usuarios", "Error al buscar el usuario")
+
+    def ventana_modificar_usuario(self):
+
+        self.usuario_seleccionado=self.tree_lista_usuarios.focus() # get the selected user
+
+        self.val_mod_usu=self.tree_lista_usuarios.item(self.usuario_seleccionado, 'values') # get the selected user
+
+        if self.val_mod_usu!="":
+
+            self.frame_modificar_usuario=Toplevel(self) # window above the user list
+            self.frame_modificar_usuario.title("modificar usuario") #Title of the window
+            self.frame_modificar_usuario.geometry("400x400") # size of the window
+            #self.centrar_ventana_modificar_usuario(400,400) # size of the window
+            self.frame_modificar_usuario.resizable(0,0) # we do not want to resize the window
+            self.frame_modificar_usuario.grab_set() # so that it does not allow any other accion until the window is closed
+
+            lblframe_modificar_usuario=LabelFrame(self.frame_modificar_usuario)
+            lblframe_modificar_usuario.grid(row=0,column=0,padx=10,pady=10,sticky=NSEW)
+
+            lbl_codigo_modificar_usuario=Label(lblframe_modificar_usuario, text="Codigo")
+            lbl_codigo_modificar_usuario.grid(row=0,column=0,padx=10,pady=10)
+            self.txt_codigo_modificar_usuario=ttk.Entry(lblframe_modificar_usuario, width=40)
+            self.txt_codigo_modificar_usuario.grid(row=0,column=1,padx=10,pady=10)
+            
+            lbl_nombre_modificar_usuario=Label(lblframe_modificar_usuario, text="Nombre")
+            lbl_nombre_modificar_usuario.grid(row=1,column=0,padx=10,pady=10)
+            self.txt_nombre_modificar_usuario=ttk.Entry(lblframe_modificar_usuario, width=40)
+            self.txt_nombre_modificar_usuario.grid(row=1,column=1,padx=10,pady=10)
+
+            lbl_clave_modificar_usuario=Label(lblframe_modificar_usuario, text="Clave")
+            lbl_clave_modificar_usuario.grid(row=2,column=0,padx=10,pady=10)
+            self.txt_clave_modificar_usuario=ttk.Entry(lblframe_modificar_usuario, width=40)
+            self.txt_clave_modificar_usuario.grid(row=2,column=1,padx=10,pady=10)
+
+            lbl_rol_modificar_usuario=Label(lblframe_modificar_usuario, text="Rol")
+            lbl_rol_modificar_usuario.grid(row=3,column=0,padx=10,pady=10)
+            self.txt_rol_modificar_usuario=ttk.Combobox(lblframe_modificar_usuario, width=38, values=("Administrador", "Vendedor", "Bodega"))
+            self.txt_rol_modificar_usuario.grid(row=3,column=1,padx=10,pady=10)
+            
+
+            btn_modificar_usuario=ttk.Button(lblframe_modificar_usuario, text="Modificar", width=38,style='warning',command=self.modificar_usuario)
+            btn_modificar_usuario.grid(row=4,column=1,padx=10,pady=10)
+            self.llenar_entrys_modificar_usuario()
+
+            self.txt_nombre_modificar_usuario.focus()
+
+    def llenar_entrys_modificar_usuario(self):
+        # clear the entrys
+        self.txt_codigo_modificar_usuario.delete(0, 'end')
+        self.txt_nombre_modificar_usuario.delete(0, 'end')  
+        self.txt_clave_modificar_usuario.delete(0, 'end')
+        self.txt_rol_modificar_usuario.delete(0, 'end')
+        # fill the entrys with the selected user data
+        self.txt_codigo_modificar_usuario.insert(0, self.val_mod_usu[0])
+        self.txt_codigo_modificar_usuario.config(state="readonly")
+        self.txt_nombre_modificar_usuario.insert(0, self.val_mod_usu[1])
+        self.txt_clave_modificar_usuario.insert(0, self.val_mod_usu[2])
+        self.txt_rol_modificar_usuario.insert(0, self.val_mod_usu[3])
+        self.txt_rol_modificar_usuario.config(state="readonly")
+
+    def modificar_usuario(self):
+        if self.txt_codigo_modificar_usuario.get()=="" or self.txt_nombre_modificar_usuario.get()=="" or self.txt_clave_modificar_usuario.get()=="" or self.txt_rol_modificar_usuario.get()=="":
+            messagebox.showwarning("Modificar usuario", "Rellene todos los campos")
+            return
+        try:
+            mi_conexion=sqlite3.connect("ventas.db")
+            mi_cursor=mi_conexion.cursor()
+            print("hola")
+
+            datos_modificar_usuario= self.txt_nombre_modificar_usuario.get(), self.txt_clave_modificar_usuario.get(), self.txt_rol_modificar_usuario.get()
+            
+            mi_cursor.execute("UPDATE usuarios SET nombre=?, clave=?, rol=? WHERE codigo="+self.txt_codigo_modificar_usuario.get(),(datos_modificar_usuario))
+            messagebox.showinfo("Modificar usuarios", "Usuario modificado correctamente")
+
+            mi_conexion.commit()
+            self.val_mod_usu=self.tree_lista_usuarios.item(self.usuario_seleccionado,text='', values=(self.txt_codigo_modificar_usuario.get(), self.txt_nombre_modificar_usuario.get(), self.txt_clave_modificar_usuario.get(), self.txt_rol_modificar_usuario.get(),))
+            self.frame_modificar_usuario.destroy() # close the window
+            self.ventana_lista_usuarios() # refresh the user list
+            mi_conexion.close()
+        except Exception as e:
+            messagebox.showerror("Modificar usuarios", f"Error al modificar el usuario: {e}")
+            # messagebox.showerror("Guardando usuarios", "Error al actualizar el usuario")
+        
+
 def main():
     app=Ventana()
     app.title("Sistema de ventas")
